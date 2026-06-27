@@ -10,7 +10,11 @@ function isEthereumProvider(value) {
 }
 
 function isMetaMaskProvider(value) {
-  return isEthereumProvider(value) && value.isMetaMask === true;
+  return (
+    isEthereumProvider(value) &&
+    value.isMetaMask === true &&
+    value.isPhantom !== true
+  );
 }
 
 function normalizeAddress(value) {
