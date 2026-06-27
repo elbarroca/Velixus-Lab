@@ -9,6 +9,10 @@ function isEthereumProvider(value) {
   );
 }
 
+function isMetaMaskProvider(value) {
+  return isEthereumProvider(value) && value.isMetaMask === true;
+}
+
 function normalizeAddress(value) {
   return typeof value === "string" && ADDRESS_PATTERN.test(value) ? value : null;
 }
@@ -32,7 +36,17 @@ function initialState(provider) {
 }
 
 export function getEthereum(globalScope = globalThis) {
-  return isEthereumProvider(globalScope?.ethereum) ? globalScope.ethereum : null;
+  const ethereum = globalScope?.ethereum;
+
+  if (isMetaMaskProvider(ethereum)) {
+    return ethereum;
+  }
+
+  if (isEthereumProvider(ethereum) && Array.isArray(ethereum.providers)) {
+    return ethereum.providers.find(isMetaMaskProvider) ?? null;
+  }
+
+  return null;
 }
 
 export function shortenAddress(address) {

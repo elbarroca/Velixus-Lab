@@ -5,7 +5,7 @@ Demo-ready assessment workspace for:
 - Test 1: MetaMask wallet integration.
 - Test 2: Solidity real estate fractional share purchase contract.
 
-The project is intentionally scoped: it validates wallet connection behavior, deploys and tests a Solidity purchase contract, and provides a static reviewer UI. It does not add ERC20 tokenization, secondary markets, KYC, admin panels, or contract-connected frontend transactions beyond the assessment requirements.
+The project is intentionally scoped: it validates wallet connection behavior, deploys and tests a Solidity purchase contract, and provides a static reviewer UI that can sign one `buyShares(uint256)` purchase through MetaMask on Localhost 8545. It does not add ERC20 tokenization, secondary markets, KYC, admin panels, or withdrawal flows beyond the assessment requirements.
 
 ## Demo Screens
 
@@ -16,6 +16,10 @@ Desktop:
 Mobile:
 
 ![Mobile demo](demo/ui-mobile-full.png)
+
+Signed transaction proof:
+
+![Transaction confirmed](demo/ui-transaction-confirmed.png)
 
 ## Repository Map
 
@@ -29,6 +33,8 @@ Mobile:
 ├── demo/
 │   ├── wallet.mjs
 │   ├── wallet.test.mjs
+│   ├── property-shares-client.mjs
+│   ├── property-shares-client.test.mjs
 │   ├── video-outline.md
 │   └── ui-*.png
 ├── scripts/
@@ -48,15 +54,19 @@ Mobile:
 flowchart TB
   Reviewer["Reviewer / Demo Operator"] --> UI["Static UI\nui/index.html"]
   UI --> Wallet["Wallet Controller\ndemo/wallet.mjs"]
+  UI --> BrowserContract["Browser Contract Client\ndemo/property-shares-client.mjs"]
   UI --> Evidence["Validation Evidence\nscreenshots + checklist"]
 
   RootScripts["Root scripts\npackage.json"] --> ContractDemo["Contract demo validation\ncontracts/scripts/demo-validation.js"]
-  RootScripts --> WalletTests["Wallet tests\ndemo/wallet.test.mjs"]
+  RootScripts --> WalletTests["Wallet + browser contract tests\ndemo/*.test.mjs"]
   RootScripts --> UiValidation["Static UI validation\nscripts/validate-ui.mjs"]
 
+  BrowserContract --> MetaMask["MetaMask / EIP-1193"]
+  MetaMask --> Hardhat
   ContractDemo --> Hardhat["Hardhat Network"]
   Hardhat --> Contract["PropertyShares.sol"]
   Contract --> State["sharesSold + sharesOwned"]
+  Contract --> Escrow["Contract ETH balance\nescrow proof"]
 ```
 
 ## Smart Contract
@@ -105,6 +115,28 @@ sequenceDiagram
   Script-->>Buyer: Demo validation passed
 ```
 
+Browser transaction sequence:
+
+```mermaid
+sequenceDiagram
+  actor Buyer
+  participant UI as Static UI
+  participant Wallet as MetaMask
+  participant HH as Localhost 8545
+  participant Contract as PropertyShares
+
+  Buyer->>UI: Connect wallet
+  UI->>Wallet: eth_requestAccounts
+  UI->>Wallet: wallet_switchEthereumChain(0x7a69)
+  Buyer->>UI: Sign purchase transaction
+  UI->>Wallet: eth_sendTransaction(to, value, data)
+  Wallet->>Contract: buyShares(shareAmount) + exact ETH
+  Contract-->>HH: SharesPurchased event
+  UI->>HH: eth_getTransactionReceipt
+  UI->>HH: eth_getBalance(contract)
+  UI-->>Buyer: Tx hash + escrow balance proof
+```
+
 ## Wallet Integration
 
 `demo/wallet.mjs` isolates MetaMask/provider behavior:
@@ -138,7 +170,9 @@ The UI is static by design:
 - no bundler required
 - served by Python’s built-in HTTP server
 - imports the shared wallet module directly
-- mirrors the validated contract state and demo checklist
+- imports the browser contract client directly
+- signs `buyShares(uint256)` through MetaMask when connected to Localhost 8545
+- shows transaction hash and contract ETH balance as escrow proof
 
 Start it:
 
@@ -202,9 +236,9 @@ flowchart LR
   B --> B4["buy 2 shares"]
   B --> B5["check state + event"]
 
-  C --> C1["6 node:test wallet cases"]
+  C --> C1["12 node:test wallet + contract-client cases"]
   F --> F1["serve UI"]
-  F --> F2["verify HTML/JS/CSS/wallet module"]
+  F --> F2["verify HTML/JS/CSS/wallet + contract modules"]
 ```
 
 Available scripts:
@@ -212,8 +246,8 @@ Available scripts:
 | Command | Purpose |
 | --- | --- |
 | `pnpm lint` | JS syntax checks for UI and validator scripts |
-| `pnpm typecheck` | JS syntax checks for UI and wallet module |
-| `pnpm test` | Hardhat contract tests + wallet tests |
+| `pnpm typecheck` | JS syntax checks for UI, wallet module, and contract client |
+| `pnpm test` | Hardhat contract tests, wallet tests, and browser contract-client tests |
 | `pnpm validate` | Full contract, wallet, syntax, and UI validation |
 | `pnpm run ui:dev` | Serve the static UI |
 | `cd contracts && pnpm run deploy:local` | Deploy to a persistent local Hardhat node |
@@ -226,7 +260,7 @@ Fresh checks run locally:
 - `pnpm typecheck`: passed
 - `pnpm test`: passed
   - 5 Hardhat contract tests
-  - 6 wallet tests
+  - 12 wallet and browser contract-client tests
 - `pnpm validate`: passed
   - compiled contracts
   - ran contract tests
@@ -235,7 +269,14 @@ Fresh checks run locally:
   - verified `sharesSold`
   - verified `sharesOwned`
   - verified `SharesPurchased`
-  - validated served static UI assets
+  - validated served static UI, wallet module, and contract-client module
+- browser transaction validation: passed with a fake EIP-1193 provider
+  - connected wallet
+  - switched from `0x1` to Localhost `0x7a69`
+  - sent `eth_sendTransaction`
+  - verified `buyShares` calldata selector `0xd1a93d18`
+  - verified exact value `0x470de4df820000` (`0.02 ETH`)
+  - displayed transaction hash and escrow balance proof
 - persistent local deploy: passed with `pnpm exec hardhat node` and `pnpm run deploy:local`
 - source/security scan: no private-key-shaped authored values and no empty catch blocks
 
@@ -248,6 +289,8 @@ Fresh checks run locally:
 - ETH validation is exact: `msg.value == shareAmount * pricePerShare`.
 - Contract state is mutated only after validation.
 - There are no external contract calls.
+- Browser transactions are blocked unless MetaMask is on Localhost 8545 (`0x7a69`).
+- The UI displays the contract ETH balance as escrow proof after a mined purchase.
 - There is no owner withdrawal path because custody management is outside the assessment scope.
 - There are no admin-only paths.
 
@@ -266,10 +309,8 @@ pnpm run ui:dev
 ```
 
 3. Open [http://127.0.0.1:5173/ui/](http://127.0.0.1:5173/ui/).
-4. Show contract summary, purchase simulator, validation checklist, wallet panel, and security assumptions.
-5. Show `contracts/contracts/PropertyShares.sol`.
-6. Point out constructor values and validation-before-mutation logic.
-7. Optional persistent deployment:
+4. Show contract summary, purchase panel, validation checklist, wallet panel, and security assumptions.
+5. Start a local chain and deploy:
 
 ```sh
 cd contracts
@@ -283,6 +324,12 @@ cd contracts
 pnpm run deploy:local
 ```
 
+6. In the UI, connect MetaMask and switch/add Localhost 8545 if prompted.
+7. Click `Sign purchase transaction`; confirm in MetaMask.
+8. Show the transaction hash and escrow balance proof in the purchase panel.
+9. Show `contracts/contracts/PropertyShares.sol`.
+10. Point out constructor values and validation-before-mutation logic.
+
 ## AI-Assisted Build Process
 
 This was built through Codex 5.5-style validation loops with specialized prompt passes for:
@@ -290,6 +337,7 @@ This was built through Codex 5.5-style validation loops with specialized prompt 
 - Solidity contract correctness
 - Hardhat tests and deployment validation
 - wallet-provider state handling
+- browser transaction signing and escrow proof
 - static UI implementation
 - browser screenshot validation
 - documentation and demo-readiness review

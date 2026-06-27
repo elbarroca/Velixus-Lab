@@ -15,6 +15,8 @@ Implement:
 - `scripts/validate-ui.mjs`
 - `demo/wallet.mjs`
 - `demo/wallet.test.mjs`
+- `demo/property-shares-client.mjs`
+- `demo/property-shares-client.test.mjs`
 - Root validation scripts in `package.json`
 - `contracts/contracts/PropertyShares.sol`
 - Hardhat compile/test/deploy setup under `contracts/`
@@ -32,6 +34,9 @@ Implement:
 - `accountsChanged` and `chainChanged` update state.
 - Reset clears local connected wallet state.
 - Provider event listeners are removed on disposal.
+- Browser purchase flow switches/adds Localhost 8545 before signing.
+- Browser purchase flow sends `eth_sendTransaction` with exact ETH and `buyShares` calldata.
+- Browser purchase flow displays transaction hash and contract balance escrow proof.
 - Buyers can purchase shares with exact ETH.
 - Zero-share purchases revert.
 - Purchases above remaining supply revert.
@@ -45,7 +50,7 @@ Implement:
 - Secondary market
 - KYC/AML flow
 - Admin panel
-- Frontend contract integration beyond wallet connection
+- Frontend contract integration beyond the single tested purchase flow
 - Owner withdrawal
 
 ## Verification Log
@@ -57,5 +62,5 @@ Implement:
 - Passed: `pnpm run test`
 - Passed: `pnpm run ui:validate`
 - Passed: `pnpm run validate`
-- Passed: browser smoke on `PORT=5174 pnpm run ui:dev` at `/ui/`
+- Passed: browser transaction validation on `PORT=5174 pnpm run ui:dev` at `/ui/`
 - Browser check target: static server from `pnpm run ui:dev`, path `/ui/`

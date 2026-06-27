@@ -13,12 +13,17 @@ const requiredHtml = [
 const requiredJs = [
   "RoyalCity Tower",
   "Demo ready",
-  "Validate purchase",
   "All validations passed",
   "Security assumptions",
   "createWalletController",
+  "buyPropertyShares",
+  "Sign purchase transaction",
+  "Escrow balance",
   "Install MetaMask",
   "Reset wallet",
+  "wallet-band",
+  "validation-strip",
+  "validation-pill",
   "pagehide",
 ];
 const requiredCss = [".app-shell", ".grid", ".panel", "@media"];
@@ -33,6 +38,13 @@ function assertIncludes(source, expectedValues, label) {
   for (const expected of expectedValues) {
     assert.ok(source.includes(expected), `${label} missing ${expected}`);
   }
+}
+
+function assertOrder(source, before, after, label) {
+  assert.ok(
+    source.indexOf(before) !== -1 && source.indexOf(before) < source.indexOf(after),
+    `${label}: expected ${before} before ${after}`,
+  );
 }
 
 async function readUiFile(path) {
@@ -52,6 +64,9 @@ const css = await readUiFile("src/styles.css");
 assertIncludes(html, requiredHtml, "HTML");
 assertIncludes(js, requiredJs, "JS");
 assertIncludes(css, requiredCss, "CSS");
+assertOrder(js, "wallet-band", "Contract summary", "wallet placement");
+assertOrder(js, "Purchase simulator", "validation-strip", "validation placement");
+assert.ok(!js.includes("Validation checklist"), "validation checklist should be compact");
 
 const server = createServer(async (request, response) => {
   const requestUrl = new URL(request.url ?? "/", "http://127.0.0.1");
@@ -83,6 +98,11 @@ try {
     await fetchText(`${baseUrl}/demo/wallet.mjs`),
     ["createWalletController", "eth_requestAccounts"],
     "served wallet helper",
+  );
+  assertIncludes(
+    await fetchText(`${baseUrl}/demo/property-shares-client.mjs`),
+    ["buyPropertyShares", "eth_sendTransaction", "wallet_switchEthereumChain"],
+    "served contract client",
   );
   assertIncludes(await fetchText(`${baseUrl}/ui/src/styles.css`), requiredCss, "served CSS");
 

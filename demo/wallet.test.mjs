@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createWalletController, shortenAddress } from "./wallet.mjs";
+import { createWalletController, getEthereum, shortenAddress } from "./wallet.mjs";
 
 class FakeProvider {
   constructor({ accounts = [], chainId = "0x1", reject = false } = {}) {
@@ -62,6 +62,47 @@ test("reports missing MetaMask when no provider exists", () => {
   const wallet = createWalletController(null);
 
   assert.equal(wallet.getState().status, "missing");
+});
+
+test("ignores non-MetaMask injected wallets", () => {
+  const phantomProvider = {
+    isPhantom: true,
+    request() {},
+  };
+
+  assert.equal(getEthereum({ ethereum: phantomProvider }), null);
+});
+
+test("ignores Phantom even when it exposes MetaMask compatibility flags", () => {
+  const phantomProvider = {
+    isMetaMask: true,
+    isPhantom: true,
+    request() {},
+  };
+
+  assert.equal(getEthereum({ ethereum: phantomProvider }), null);
+});
+
+test("selects MetaMask from direct and multi-provider injection", () => {
+  const phantomProvider = {
+    isPhantom: true,
+    request() {},
+  };
+  const metaMaskProvider = {
+    isMetaMask: true,
+    request() {},
+  };
+
+  assert.equal(getEthereum({ ethereum: metaMaskProvider }), metaMaskProvider);
+  assert.equal(
+    getEthereum({
+      ethereum: {
+        providers: [phantomProvider, metaMaskProvider],
+        request() {},
+      },
+    }),
+    metaMaskProvider,
+  );
 });
 
 test("connects through eth_requestAccounts and records chain id", async () => {
