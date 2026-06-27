@@ -142,6 +142,7 @@ sequenceDiagram
 `demo/wallet.mjs` isolates MetaMask/provider behavior:
 
 - detects `window.ethereum`
+- selects MetaMask from multi-wallet injections and ignores Phantom/non-MetaMask providers
 - uses `eth_requestAccounts`
 - reads `eth_chainId`
 - normalizes addresses and chain IDs before display
@@ -236,7 +237,7 @@ flowchart LR
   B --> B4["buy 2 shares"]
   B --> B5["check state + event"]
 
-  C --> C1["12 node:test wallet + contract-client cases"]
+  C --> C1["13 node:test wallet + contract-client cases"]
   F --> F1["serve UI"]
   F --> F2["verify HTML/JS/CSS/wallet + contract modules"]
 ```
@@ -260,7 +261,7 @@ Fresh checks run locally:
 - `pnpm typecheck`: passed
 - `pnpm test`: passed
   - 5 Hardhat contract tests
-  - 12 wallet and browser contract-client tests
+  - 13 wallet and browser contract-client tests
 - `pnpm validate`: passed
   - compiled contracts
   - ran contract tests
@@ -283,6 +284,7 @@ Fresh checks run locally:
 ## Security Assumptions
 
 - Wallet/provider data is treated as external input and normalized before display.
+- Multi-wallet browser injections are filtered to MetaMask; Phantom/non-MetaMask providers are treated as missing MetaMask.
 - Rejected MetaMask requests show a generic UI error and do not log raw provider error objects.
 - The demo never stores or logs private keys or secrets.
 - Solidity `^0.8.28` provides checked arithmetic.

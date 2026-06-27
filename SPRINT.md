@@ -27,6 +27,7 @@ Implement:
 ## Acceptance Checks
 
 - MetaMask is detected through `window.ethereum`.
+- Phantom/non-MetaMask providers are ignored when multiple wallet extensions inject providers.
 - Missing MetaMask shows an install state.
 - Wallet connect uses `eth_requestAccounts`.
 - Connected wallet address is shortened in the UI.
