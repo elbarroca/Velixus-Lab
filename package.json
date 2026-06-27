@@ -1,0 +1,18 @@
+{
+  "name": "property-shares-demo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "contracts:compile": "pnpm --dir contracts compile",
+    "contracts:test": "pnpm --dir contracts test",
+    "contracts:demo": "pnpm --dir contracts demo:validate",
+    "wallet:test": "node --test demo/wallet.test.mjs",
+    "ui:dev": "python3 -m http.server ${PORT:-5173}",
+    "ui:validate": "node scripts/validate-ui.mjs",
+    "lint": "node --check ui/src/main.js && node --check scripts/validate-ui.mjs",
+    "typecheck": "node --check ui/src/main.js && node --check demo/wallet.mjs",
+    "test": "pnpm contracts:test && pnpm wallet:test",
+    "validate": "pnpm contracts:demo && pnpm wallet:test && pnpm lint && pnpm typecheck && pnpm ui:validate"
+  }
+}

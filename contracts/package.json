@@ -1,0 +1,22 @@
+{
+  "name": "property-shares-contracts",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "demo:validate": "pnpm compile && pnpm test && hardhat run scripts/demo-validation.js",
+    "deploy:local": "hardhat run scripts/deploy.js --network localhost",
+    "validate": "pnpm run demo:validate"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "^4.0.13",
+    "@nomicfoundation/hardhat-ethers-chai-matchers": "^3.0.0",
+    "@nomicfoundation/hardhat-mocha": "^3.0.0",
+    "chai": "^6.2.1",
+    "ethers": "^6.15.0",
+    "hardhat": "^3.9.0",
+    "mocha": "^11.7.5"
+  }
+}

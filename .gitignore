@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.DS_Store
+
+contracts/artifacts/
+contracts/cache/
+contracts/node_modules/
+
+ui/dist/
+ui/node_modules/
